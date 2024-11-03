@@ -17,6 +17,7 @@ export interface GraphQLContext {
 
 interface UserArgs {
   id: string;
+  memberTypeId?: string;
 }
 
 export const RootQuery = new GraphQLObjectType({
@@ -92,7 +93,6 @@ export const RootQuery = new GraphQLObjectType({
           where: {
             id: args.id,
           },
-          include: { memberType: true },
         });
 
         return profile;
@@ -112,7 +112,6 @@ export const UserType = new GraphQLObjectType({
       resolve: async (user: UserArgs, _, context: GraphQLContext) => {
         const profile = await context.prisma.profile.findUnique({
           where: { userId: user.id },
-          include: { memberType: true },
         });
 
         return profile;
@@ -164,7 +163,14 @@ export const ProfileType = new GraphQLObjectType({
     isMale: { type: new GraphQLNonNull(GraphQLBoolean) },
     yearOfBirth: { type: new GraphQLNonNull(GraphQLInt) },
     memberTypeId: { type: MemberTypeId },
-    memberType: { type: MemberType },
+    memberType: {
+      type: new GraphQLNonNull(MemberType),
+      resolve: async (_parent: UserArgs, _, context: GraphQLContext) => {
+        return await context.prisma.memberType.findUnique({
+          where: { id: _parent.memberTypeId },
+        });
+      },
+    },
     userId: { type: UUIDType },
   }),
 });
